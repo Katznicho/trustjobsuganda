@@ -112,7 +112,6 @@ jobs:
             # Set permissions for storage and cache directories
             if [ -d "storage" ] && [ -d "bootstrap/cache" ]; then
               chmod -R 755 storage bootstrap/cache
-              chown -R u367101322:u367101322 storage bootstrap/cache
               echo "Permissions set for storage and cache directories"
             else
               echo "Warning: storage or bootstrap/cache directory not found"
@@ -143,17 +142,12 @@ jobs:
               # Run migrations with verbose output
               php artisan migrate --force --verbose || { echo "Migration failed"; exit 1; }
 
-              # Check if seeders need to be run
-              USER_COUNT=$(php artisan db:query --statement="SELECT COUNT(*) as count FROM users" 2>/dev/null | grep -o "\"count\": *[0-9]\+" | awk "{print \$2}" || echo "0")
-              SKILL_COUNT=$(php artisan db:query --statement="SELECT COUNT(*) as count FROM skills" 2>/dev/null | grep -o "\"count\": *[0-9]\+" | awk "{print \$2}" || echo "0")
-              
-              echo "User count: $USER_COUNT, Skill count: $SKILL_COUNT"
-              
-              if [ "$USER_COUNT" = "0" ] || [ "$SKILL_COUNT" = "0" ]; then
-                echo "Database appears empty, running seeders"
+              # Check if seeders need to be run (simplified check)
+              if php artisan db:query --statement="SELECT COUNT(*) FROM users" 2>/dev/null | grep -q "0"; then
+                echo "Users table is empty, running seeders"
                 php artisan db:seed --force --verbose || { echo "Seeding failed"; exit 1; }
               else
-                echo "Database has data, skipping seeding"
+                echo "Users table has data, skipping seeding"
               fi
 
               # Clear and cache configurations
@@ -193,6 +187,4 @@ jobs:
             php artisan --version
             echo "Checking application status:"
             php artisan about
-            echo "Checking database connection:"
-            php artisan db:show || echo "Database connection check failed"
           '
