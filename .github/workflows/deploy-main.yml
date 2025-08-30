@@ -9,9 +9,6 @@ jobs:
   deploy:
     name: Deploy Main Branch
     runs-on: ubuntu-latest
-    env:
-      ACTIONS_RUNNER_DEBUG: true
-      ACTIONS_STEP_DEBUG: true
 
     steps:
       # Step 1: Checkout the code
@@ -47,28 +44,16 @@ jobs:
       - name: Install sshpass
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass rsync || { echo "Failed to install sshpass/rsync"; exit 1; }
-          sshpass -v || { echo "sshpass not found after installation"; exit 1; }
+          sudo apt-get install -y sshpass rsync
 
-      # Step 7: Test SSH Connection
-      - name: Test SSH Connection
-        run: |
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} whoami
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "echo 'Test command execution' && ls -la /home/u367101322/domains/jobtrust.space/public_html"
-
-      # Step 8: Deploy to Hostinger via SSH
+      # Step 7: Deploy to Hostinger
       - name: Deploy to Hostinger
         env:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
-          # Define deployment directory
           DEPLOY_DIR="/home/u367101322/domains/jobtrust.space/public_html"
-
-          # Debug: List local files in GITHUB_WORKSPACE
-          echo "Local files in GITHUB_WORKSPACE:"
-          ls -la $GITHUB_WORKSPACE
-
-          # Copy files using rsync with sshpass, excluding sensitive files
+          
+          # Copy files using rsync
           sshpass -p "$FTP_PASSWORD" rsync -avz \
             --exclude '.env' \
             --exclude '.htaccess' \
@@ -87,104 +72,32 @@ jobs:
             $GITHUB_WORKSPACE/ \
             ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }}:"$DEPLOY_DIR"
 
-          # Run SSH commands to verify and configure
-          sshpass -p "$FTP_PASSWORD" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} bash -c '
-            DEPLOY_DIR="/home/u367101322/domains/jobtrust.space/public_html"
-            cd "$DEPLOY_DIR" || { echo "Failed to change directory to $DEPLOY_DIR"; exit 1; }
+      # Step 8: Set permissions
+      - name: Set permissions
+        run: |
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && chmod -R 755 storage bootstrap/cache"
 
-            # Debug: List directory contents after rsync
-            echo "Directory contents after rsync:"
-            ls -la
+      # Step 9: Run migrations
+      - name: Run migrations
+        run: |
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan migrate --force"
 
-            # Debug: Check public/build directory
-            echo "Contents of public/build:"
-            ls -la public/build || echo "public/build directory not found"
+      # Step 10: Check and run seeders
+      - name: Check and run seeders
+        run: |
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan db:seed --force"
 
-            # Debug: Check .env contents (sanitized)
-            if [ -f ".env" ]; then
-              echo ".env exists"
-              grep -v "DB_" .env | grep -v "APP_KEY" || echo "Failed to read .env"
-            else
-              echo "Error: .env file not found"
-              exit 1
-            fi
+      # Step 11: Optimize Laravel
+      - name: Optimize Laravel
+        run: |
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache"
 
-            # Set permissions for storage and cache directories
-            if [ -d "storage" ] && [ -d "bootstrap/cache" ]; then
-              chmod -R 755 storage bootstrap/cache
-              echo "Permissions set for storage and cache directories"
-            else
-              echo "Warning: storage or bootstrap/cache directory not found"
-            fi
+      # Step 12: Create storage link
+      - name: Create storage link
+        run: |
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan storage:link"
 
-            # Verify PHP is available
-            if command -v php >/dev/null 2>&1; then
-              echo "PHP found: $(php -v | head -1)"
-            else
-              echo "Error: PHP not found on server"
-              exit 1
-            fi
-
-            # Verify artisan exists before running commands
-            if [ -f "artisan" ]; then
-              echo "Artisan file found, proceeding with Laravel commands"
-
-              # Debug: List available migrations
-              echo "Listing migrations:"
-              ls -la database/migrations
-
-              # Debug: Check migrations table
-              php artisan migrate:status || echo "Failed to check migration status"
-
-              # Ensure migrations table exists
-              php artisan migrate:install || echo "Failed to create migrations table"
-
-              # Run migrations with verbose output
-              php artisan migrate --force --verbose || { echo "Migration failed"; exit 1; }
-
-              # Check if seeders need to be run (simplified check)
-              if php artisan db:query --statement="SELECT COUNT(*) FROM users" 2>/dev/null | grep -q "0"; then
-                echo "Users table is empty, running seeders"
-                php artisan db:seed --force --verbose || { echo "Seeding failed"; exit 1; }
-              else
-                echo "Users table has data, skipping seeding"
-              fi
-
-              # Clear and cache configurations
-              echo "Clearing and caching configurations..."
-              php artisan optimize:clear
-              php artisan config:clear
-              php artisan cache:clear
-              php artisan route:clear
-              php artisan route:cache
-              php artisan view:clear
-              php artisan view:cache
-              php artisan config:cache
-
-              # Create storage link if it doesn't exist
-              if [ ! -L "public/storage" ]; then
-                echo "Creating storage link..."
-                php artisan storage:link
-              fi
-
-              # Restart queue workers if applicable
-              php artisan queue:restart || echo "Queue restart not available"
-
-              echo "Deployment completed successfully!"
-            else
-              echo "Error: artisan file not found"
-              exit 1
-            fi
-          '
-
-      # Step 9: Verify deployment
+      # Step 13: Verify deployment
       - name: Verify deployment
         run: |
-          echo "Deployment verification..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} bash -c '
-            cd /home/u367101322/domains/jobtrust.space/public_html
-            echo "Checking Laravel version:"
-            php artisan --version
-            echo "Checking application status:"
-            php artisan about
-          '
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan --version"
