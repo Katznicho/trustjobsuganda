@@ -38,6 +38,16 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Custom validation for duplicate skills
+        if ($request->role === 'worker' && $request->has('skills')) {
+            $skillIds = collect($request->skills)->pluck('skill_id')->filter();
+            $uniqueSkillIds = $skillIds->unique();
+            
+            if ($skillIds->count() !== $uniqueSkillIds->count()) {
+                return back()->withErrors(['skills' => 'Duplicate skills are not allowed.'])->withInput();
+            }
+        }
+        
         // Validate basic information
         $request->validate([
             'first_name' => ['required', 'string', 'max:50'],
@@ -103,7 +113,10 @@ class RegisteredUserController extends Controller
 
         // Create skills (for workers)
         if ($request->role === 'worker' && $request->has('skills')) {
-            foreach ($request->skills as $skillData) {
+            // Remove duplicates based on skill_id
+            $uniqueSkills = collect($request->skills)->unique('skill_id')->values();
+            
+            foreach ($uniqueSkills as $skillData) {
                 $yearsEstimate = $this->getYearsEstimate($skillData['experience_tier']);
                 
                 UserSkill::create([
