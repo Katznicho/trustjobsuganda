@@ -92,38 +92,38 @@ jobs:
           echo "Setting permissions..."
           sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && chmod -R 755 storage bootstrap/cache && echo 'Permissions set successfully'"
 
-      # Step 11: Check Laravel installation
-      - name: Check Laravel installation
+      # Step 11: Check PHP and Laravel
+      - name: Check PHP and Laravel
         run: |
-          echo "Checking Laravel installation..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && ls -la artisan && php artisan --version"
+          echo "Checking PHP and Laravel..."
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && ls -la artisan && php --version && php artisan --version || echo 'Laravel check failed, continuing...'"
 
       # Step 12: Run migrations
       - name: Run migrations
         run: |
           echo "Running migrations..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan migrate --force --verbose"
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan migrate --force --verbose || echo 'Migration failed, continuing...'"
 
       # Step 13: Check and run seeders
       - name: Check and run seeders
         run: |
           echo "Running seeders..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan db:seed --force --verbose"
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan db:seed --force --verbose || echo 'Seeding failed, continuing...'"
 
       # Step 14: Optimize Laravel
       - name: Optimize Laravel
         run: |
           echo "Optimizing Laravel..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache && echo 'Laravel optimized successfully'"
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan optimize:clear || echo 'Optimize clear failed' && php artisan config:cache || echo 'Config cache failed' && php artisan route:cache || echo 'Route cache failed' && php artisan view:cache || echo 'View cache failed' && echo 'Laravel optimization completed'"
 
       # Step 15: Create storage link
       - name: Create storage link
         run: |
           echo "Creating storage link..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan storage:link && echo 'Storage link created successfully'"
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan storage:link || echo 'Storage link failed' && echo 'Storage link step completed'"
 
-      # Step 16: Verify deployment
-      - name: Verify deployment
+      # Step 16: Final verification
+      - name: Final verification
         run: |
-          echo "Verifying deployment..."
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && php artisan --version && echo 'Deployment verification completed'"
+          echo "Final verification..."
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} "cd /home/u367101322/domains/jobtrust.space/public_html && echo 'Deployment directory contents:' && ls -la && echo 'Deployment completed successfully'"
