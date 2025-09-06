@@ -119,7 +119,15 @@ jobs:
               
               # Debug: Check database connection
               echo "Testing database connection..."
-              php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || echo "Database connection failed"
+              php artisan tinker --execute="
+                try {
+                  \$pdo = DB::connection()->getPdo();
+                  echo 'Database connection successful!';
+                  echo 'Database: ' . DB::connection()->getDatabaseName();
+                } catch (Exception \$e) {
+                  echo 'Database connection failed: ' . \$e->getMessage();
+                }
+              " || echo "Database connection test failed"
               
               # Debug: List available migrations
               echo "Listing migrations:"
