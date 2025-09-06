@@ -13,7 +13,14 @@ return new class extends Migration
     {
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('job_id')->constrained('job_listings')->onDelete('cascade');
+            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+            $table->text('cover_letter')->nullable();
             $table->timestamps();
+            
+            // Ensure a user can only apply once to a job
+            $table->unique(['user_id', 'job_id']);
         });
     }
 

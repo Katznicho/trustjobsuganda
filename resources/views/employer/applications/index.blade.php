@@ -71,10 +71,26 @@
 
 
                                 <div class="flex space-x-2">
-                                    <button class="text-indigo-600 hover:text-indigo-900 text-sm">View Profile</button>
-                                    <button class="text-green-600 hover:text-green-900 text-sm">Shortlist</button>
-                                    <button class="text-blue-600 hover:text-blue-900 text-sm">Hire</button>
-                                    <button class="text-red-600 hover:text-red-900 text-sm">Reject</button>
+                                    <a href="{{ route('employer.applications.worker-profile', $application) }}" 
+                                       class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">View Profile</a>
+                                    
+                                    @if($application->status === 'pending')
+                                        <button onclick="shortlistApplication({{ $application->id }})" 
+                                                class="text-green-600 hover:text-green-900 text-sm font-medium">Shortlist</button>
+                                        <button onclick="hireApplication({{ $application->id }})" 
+                                                class="text-blue-600 hover:text-blue-900 text-sm font-medium">Hire</button>
+                                        <button onclick="rejectApplication({{ $application->id }})" 
+                                                class="text-red-600 hover:text-red-900 text-sm font-medium">Reject</button>
+                                    @elseif($application->status === 'shortlisted')
+                                        <button onclick="hireApplication({{ $application->id }})" 
+                                                class="text-blue-600 hover:text-blue-900 text-sm font-medium">Hire</button>
+                                        <button onclick="rejectApplication({{ $application->id }})" 
+                                                class="text-red-600 hover:text-red-900 text-sm font-medium">Reject</button>
+                                    @elseif($application->status === 'hired')
+                                        <span class="text-green-600 text-sm font-medium">✓ Hired</span>
+                                    @elseif($application->status === 'rejected')
+                                        <span class="text-red-600 text-sm font-medium">✗ Rejected</span>
+                                    @endif
                                 </div>
                             </div>
                             @endforeach
@@ -118,5 +134,116 @@
                 }
             });
         });
+
+        function shortlistApplication(applicationId) {
+            Swal.fire({
+                title: 'Shortlist Application?',
+                text: 'Are you sure you want to shortlist this application?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Shortlist',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create a form to submit the request
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/employer/applications/${applicationId}/shortlist`;
+                    
+                    // Add CSRF token
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    form.appendChild(csrfToken);
+                    
+                    // Add method override for PATCH
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'PATCH';
+                    form.appendChild(methodField);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        function hireApplication(applicationId) {
+            Swal.fire({
+                title: 'Hire Worker?',
+                text: 'Are you sure you want to hire this worker? This will mark the job as in progress.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Hire',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create a form to submit the request
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/employer/applications/${applicationId}/hire`;
+                    
+                    // Add CSRF token
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    form.appendChild(csrfToken);
+                    
+                    // Add method override for PATCH
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'PATCH';
+                    form.appendChild(methodField);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        function rejectApplication(applicationId) {
+            Swal.fire({
+                title: 'Reject Application?',
+                text: 'Are you sure you want to reject this application? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Reject',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create a form to submit the request
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/employer/applications/${applicationId}/reject`;
+                    
+                    // Add CSRF token
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    form.appendChild(csrfToken);
+                    
+                    // Add method override for PATCH
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'PATCH';
+                    form.appendChild(methodField);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
     </script>
 </x-app-layout>

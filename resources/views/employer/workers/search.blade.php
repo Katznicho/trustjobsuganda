@@ -108,9 +108,9 @@
                                 </div>
 
                                 <div class="flex space-x-2">
-                                    <button class="text-indigo-600 hover:text-indigo-900 text-sm">View Profile</button>
-                                    <button class="text-green-600 hover:text-green-900 text-sm">Contact</button>
-                                    <button class="text-blue-600 hover:text-blue-900 text-sm">Invite to Job</button>
+                                    <a href="{{ route('employer.workers.profile', $worker) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">View Profile</a>
+                                    <button onclick="openContactModal({{ $worker->id }}, '{{ $worker->full_name }}')" class="text-green-600 hover:text-green-900 text-sm">Contact</button>
+                                    <button onclick="openInviteModal({{ $worker->id }}, '{{ $worker->full_name }}')" class="text-blue-600 hover:text-blue-900 text-sm">Invite to Job</button>
                                 </div>
                             </div>
                             @endforeach
@@ -136,5 +136,191 @@
             </div>
         </div>
     </div>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Contact Worker</h3>
+                    <button onclick="closeContactModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="contactForm" method="POST" action="{{ route('employer.workers.contact') }}">
+                    @csrf
+                    <input type="hidden" id="contact_worker_id" name="worker_id">
+                    
+                    <div class="mb-4">
+                        <label for="contact_subject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                        <input type="text" id="contact_subject" name="subject" required 
+                               class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="contact_message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                        <textarea id="contact_message" name="message" rows="4" required 
+                                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeContactModal()" 
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite to Job Modal -->
+    <div id="inviteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Invite to Job</h3>
+                    <button onclick="closeInviteModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="inviteForm" method="POST" action="{{ route('employer.workers.invite') }}">
+                    @csrf
+                    <input type="hidden" id="invite_worker_id" name="worker_id">
+                    
+                    <div class="mb-4">
+                        <label for="invite_job_id" class="block text-sm font-medium text-gray-700 mb-1">Select Job</label>
+                        <select id="invite_job_id" name="job_id" required 
+                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Choose a job...</option>
+                            @foreach(Auth::user()->jobListings()->where('status', 'open')->get() as $job)
+                                <option value="{{ $job->id }}">{{ $job->title }} - UGX {{ number_format($job->budget) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="invite_message" class="block text-sm font-medium text-gray-700 mb-1">Personal Message (Optional)</label>
+                        <textarea id="invite_message" name="message" rows="3" 
+                                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                  placeholder="Add a personal message to your invitation..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeInviteModal()" 
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Send Invitation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contact Modal Functions
+        function openContactModal(workerId, workerName) {
+            document.getElementById('contact_worker_id').value = workerId;
+            document.getElementById('contact_subject').value = `Job Opportunity - ${workerName}`;
+            document.getElementById('contactModal').classList.remove('hidden');
+        }
+
+        function closeContactModal() {
+            document.getElementById('contactModal').classList.add('hidden');
+            document.getElementById('contactForm').reset();
+        }
+
+        // Invite Modal Functions
+        function openInviteModal(workerId, workerName) {
+            document.getElementById('invite_worker_id').value = workerId;
+            document.getElementById('inviteModal').classList.remove('hidden');
+        }
+
+        function closeInviteModal() {
+            document.getElementById('inviteModal').classList.add('hidden');
+            document.getElementById('inviteForm').reset();
+        }
+
+        // Form submissions with SweetAlert
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'Sending Message...',
+                text: 'Please wait while we send your message.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            this.submit();
+        });
+
+        document.getElementById('inviteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'Sending Invitation...',
+                text: 'Please wait while we send your job invitation.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            this.submit();
+        });
+
+        // Show success/error messages
+        @if(session('success'))
+            Swal.fire({
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                title: 'Error!',
+                text: '{{ session('error') }}',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const contactModal = document.getElementById('contactModal');
+            const inviteModal = document.getElementById('inviteModal');
+            
+            if (event.target === contactModal) {
+                closeContactModal();
+            }
+            if (event.target === inviteModal) {
+                closeInviteModal();
+            }
+        }
+    </script>
 </x-app-layout>
+
+
 

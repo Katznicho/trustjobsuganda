@@ -29,11 +29,39 @@
                         <!-- Required Skills -->
                         <div>
                             <x-input-label for="required_skills" :value="__('Required Skills')" />
-                            <select id="required_skills" name="required_skill_ids[]" multiple class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                @foreach($skills as $skill)
-                                    <option value="{{ $skill->id }}">{{ $skill->name }} ({{ $skill->category->name }})</option>
+                            <p class="text-sm text-gray-600 mt-1 mb-4">Select the skills required for this job. You can choose multiple skills from different categories.</p>
+                            
+                            <div class="border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto skills-container">
+                                @foreach($skillCategories as $category)
+                                    <div class="mb-6 last:mb-0">
+                                        <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center skill-category-header">
+                                            <span class="mr-2">{{ $category->icon ?? '📋' }}</span>
+                                            {{ $category->name }}
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ml-6">
+                                            @foreach($category->skills as $skill)
+                                                <label class="flex items-center p-2 rounded-md cursor-pointer skill-checkbox-container">
+                                                    <input type="checkbox" 
+                                                           name="required_skill_ids[]" 
+                                                           value="{{ $skill->id }}"
+                                                           {{ in_array($skill->id, old('required_skill_ids', [])) ? 'checked' : '' }}
+                                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 mr-2">
+                                                    <span class="text-sm text-gray-700">{{ $skill->name }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 @endforeach
-                            </select>
+                            </div>
+                            
+                            <div class="mt-2 flex items-center justify-between">
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="selectAllSkills()" class="text-sm text-indigo-600 hover:text-indigo-800">Select All</button>
+                                    <button type="button" onclick="clearAllSkills()" class="text-sm text-gray-600 hover:text-gray-800">Clear All</button>
+                                </div>
+                                <span id="selected-count" class="text-sm text-gray-500">0 skills selected</span>
+                            </div>
+                            
                             <x-input-error :messages="$errors->get('required_skill_ids')" class="mt-2" />
                         </div>
 
@@ -118,5 +146,139 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .skill-checkbox-container {
+            transition: all 0.2s ease;
+        }
+        
+        .skill-checkbox-container:hover {
+            background-color: #f9fafb;
+            transform: translateY(-1px);
+        }
+        
+        .skill-checkbox-container input[type="checkbox"]:checked + span {
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        .skill-category-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .skills-container {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        
+        .skills-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .skills-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .skills-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .skills-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+
+    <script>
+        // Update selected skills counter
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('input[name="required_skill_ids[]"]');
+            const checkedBoxes = document.querySelectorAll('input[name="required_skill_ids[]"]:checked');
+            const countElement = document.getElementById('selected-count');
+            
+            countElement.textContent = `${checkedBoxes.length} skill${checkedBoxes.length !== 1 ? 's' : ''} selected`;
+        }
+
+        // Select all skills
+        function selectAllSkills() {
+            const checkboxes = document.querySelectorAll('input[name="required_skill_ids[]"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelectedCount();
+        }
+
+        // Clear all skills
+        function clearAllSkills() {
+            const checkboxes = document.querySelectorAll('input[name="required_skill_ids[]"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectedCount();
+        }
+
+        // Add event listeners to all skill checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('input[name="required_skill_ids[]"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCount);
+            });
+            
+            // Initialize counter
+            updateSelectedCount();
+        });
+
+        // Form submission with SweetAlert
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const checkedBoxes = document.querySelectorAll('input[name="required_skill_ids[]"]:checked');
+            
+            if (checkedBoxes.length === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'No Skills Selected',
+                    text: 'Please select at least one skill required for this job.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+
+            // Show loading state
+            Swal.fire({
+                title: 'Posting Job...',
+                text: 'Please wait while we create your job listing.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        });
+
+        // Show validation errors if any
+        @if($errors->any())
+            Swal.fire({
+                title: 'Validation Error!',
+                text: 'Please check the form for errors and try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        // Show success message if exists
+        @if(session('success'))
+            Swal.fire({
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        @endif
+    </script>
 </x-app-layout>
+
+
 

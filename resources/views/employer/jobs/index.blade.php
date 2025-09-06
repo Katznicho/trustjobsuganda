@@ -61,10 +61,27 @@
                                 </div>
                                 @endif
 
-                                <div class="flex space-x-2">
-                                    <a href="#" class="text-indigo-600 hover:text-indigo-900 text-sm">View Details</a>
-                                    <a href="#" class="text-yellow-600 hover:text-yellow-900 text-sm">Edit</a>
-                                    <a href="#" class="text-red-600 hover:text-red-900 text-sm">Delete</a>
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{{ route('employer.jobs.show', $job) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">View Details</a>
+                                    <a href="{{ route('employer.jobs.edit', $job) }}" class="text-yellow-600 hover:text-yellow-900 text-sm">Edit</a>
+                                    
+                                    @if($job->status === 'open')
+                                        <button onclick="updateJobStatus({{ $job->id }}, 'in_progress', 'Mark as Taken')" class="text-green-600 hover:text-green-900 text-sm">Mark as Taken</button>
+                                        <button onclick="updateJobStatus({{ $job->id }}, 'cancelled', 'Mark as Unavailable')" class="text-orange-600 hover:text-orange-900 text-sm">Mark as Unavailable</button>
+                                    @elseif($job->status === 'in_progress')
+                                        <button onclick="updateJobStatus({{ $job->id }}, 'completed', 'Mark as Completed')" class="text-blue-600 hover:text-blue-900 text-sm">Mark as Completed</button>
+                                        <button onclick="updateJobStatus({{ $job->id }}, 'open', 'Reopen Job')" class="text-green-600 hover:text-green-900 text-sm">Reopen</button>
+                                    @elseif($job->status === 'completed')
+                                        <button onclick="updateJobStatus({{ $job->id }}, 'open', 'Reopen Job')" class="text-green-600 hover:text-green-900 text-sm">Reopen</button>
+                                    @elseif($job->status === 'cancelled')
+                                        <button onclick="updateJobStatus({{ $job->id }}, 'open', 'Reopen Job')" class="text-green-600 hover:text-green-900 text-sm">Reopen</button>
+                                    @endif
+                                    
+                                    <form method="POST" action="{{ route('employer.jobs.destroy', $job) }}" class="inline" onsubmit="return confirmDeleteJob({{ $job->id }}, '{{ $job->title }}')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900 text-sm">Delete</button>
+                                    </form>
                                 </div>
                             </div>
                             @endforeach
@@ -93,5 +110,92 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden form for status updates -->
+    <form id="statusUpdateForm" method="POST" style="display: none;">
+        @csrf
+        @method('PATCH')
+        <input type="hidden" id="status_job_id" name="job_id">
+        <input type="hidden" id="status_new_status" name="status">
+    </form>
+
+    <script>
+        function confirmDeleteJob(jobId, jobTitle) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete the job "${jobTitle}". This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // The form will submit automatically
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        function updateJobStatus(jobId, newStatus, actionText) {
+            Swal.fire({
+                title: 'Update Job Status',
+                text: `Are you sure you want to ${actionText.toLowerCase()}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, update it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Update the hidden form
+                    document.getElementById('status_job_id').value = jobId;
+                    document.getElementById('status_new_status').value = newStatus;
+                    
+                    // Set the form action
+                    document.getElementById('statusUpdateForm').action = `/employer/jobs/${jobId}/status`;
+                    
+                    // Show loading
+                    Swal.fire({
+                        title: 'Updating...',
+                        text: 'Please wait while we update the job status.',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form
+                    document.getElementById('statusUpdateForm').submit();
+                }
+            });
+        }
+
+        // Show success message if exists
+        @if(session('success'))
+            Swal.fire({
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        // Show error message if exists
+        @if(session('error'))
+            Swal.fire({
+                title: 'Error!',
+                text: '{{ session('error') }}',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        @endif
+    </script>
 </x-app-layout>
+
+
 

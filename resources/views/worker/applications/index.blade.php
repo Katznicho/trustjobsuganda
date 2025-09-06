@@ -69,9 +69,14 @@
                                 @endif
 
                                 <div class="flex space-x-2">
-                                    <button class="text-indigo-600 hover:text-indigo-900 text-sm">View Job Details</button>
-                                    <button class="text-yellow-600 hover:text-yellow-900 text-sm">Edit Application</button>
-                                    <button class="text-red-600 hover:text-red-900 text-sm">Withdraw</button>
+                                    <a href="{{ route('worker.jobs.show', $application->job) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">View Job Details</a>
+                                    @if($application->status === 'pending')
+                                        <a href="{{ route('worker.applications.edit', $application) }}" class="text-yellow-600 hover:text-yellow-900 text-sm">Edit Application</a>
+                                        <button onclick="withdrawApplication({{ $application->id }}, '{{ $application->job->title }}')" class="text-red-600 hover:text-red-900 text-sm">Withdraw</button>
+                                    @else
+                                        <span class="text-gray-400 text-sm cursor-not-allowed">Edit Application</span>
+                                        <span class="text-gray-400 text-sm cursor-not-allowed">Withdraw</span>
+                                    @endif
                                 </div>
                             </div>
                             @endforeach
@@ -101,7 +106,45 @@
         </div>
     </div>
 
+    <!-- Hidden form for withdrawing applications -->
+    <form id="withdrawForm" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
+
     <script>
+        function withdrawApplication(applicationId, jobTitle) {
+            Swal.fire({
+                title: 'Withdraw Application',
+                text: `Are you sure you want to withdraw your application for "${jobTitle}"? This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, withdraw it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Set the form action
+                    document.getElementById('withdrawForm').action = `/worker/applications/${applicationId}`;
+                    
+                    // Show loading
+                    Swal.fire({
+                        title: 'Withdrawing...',
+                        text: 'Please wait while we withdraw your application.',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form
+                    document.getElementById('withdrawForm').submit();
+                }
+            });
+        }
+
         document.getElementById('statusFilter').addEventListener('change', function() {
             const status = this.value;
             const applications = document.querySelectorAll('.border.border-gray-200.rounded-lg');
@@ -115,6 +158,27 @@
                 }
             });
         });
+
+        // Show success/error messages
+        @if(session('success'))
+            Swal.fire({
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                title: 'Error!',
+                text: '{{ session('error') }}',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        @endif
     </script>
 </x-app-layout>
+
+
 

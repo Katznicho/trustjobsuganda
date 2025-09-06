@@ -11,9 +11,17 @@
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-semibold text-gray-900">Profile Information</h3>
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
-                            Edit Profile
-                        </button>
+                        <div class="flex space-x-2">
+                            <a href="{{ route('profile.public', $user) }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition" target="_blank">
+                                View Public Profile
+                            </a>
+                            <a href="{{ route('worker.cv.download') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                                Download CV
+                            </a>
+                            <a href="{{ route('worker.profile.edit') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
+                                Edit Profile
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Personal Information -->
@@ -221,4 +229,6 @@
         </div>
     </div>
 </x-app-layout>
+
+
 

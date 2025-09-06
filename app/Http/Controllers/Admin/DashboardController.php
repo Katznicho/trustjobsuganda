@@ -175,4 +175,129 @@ class DashboardController extends Controller
 
         return redirect()->route('admin.skills.index')->with('success', 'Skill category deleted successfully!');
     }
+
+    // Job Management
+    public function showJob(JobListing $job)
+    {
+        $job->load(['employer', 'applications.worker']);
+        return view('admin.jobs.show', compact('job'));
+    }
+
+    public function editJob(JobListing $job)
+    {
+        return view('admin.jobs.edit', compact('job'));
+    }
+
+    public function updateJob(Request $request, JobListing $job)
+    {
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'budget' => ['required', 'numeric', 'min:0'],
+            'pay_type' => ['required', 'in:fixed,hourly,daily'],
+            'district' => ['required', 'string', 'max:255'],
+            'specific_location' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'in:open,in_progress,completed,cancelled'],
+            'required_skills' => ['nullable', 'string'],
+            'experience_level' => ['nullable', 'string'],
+            'duration' => ['nullable', 'string'],
+            'deadline' => ['nullable', 'date'],
+        ]);
+
+        $job->update($request->all());
+
+        return redirect()->route('admin.jobs.show', $job)->with('success', 'Job updated successfully!');
+    }
+
+    public function destroyJob(JobListing $job)
+    {
+        $job->delete();
+
+        return redirect()->route('admin.jobs.index')->with('success', 'Job deleted successfully!');
+    }
+
+    // User Management
+    public function showUser(User $user)
+    {
+        $user->load(['profile', 'userSkills.skill', 'applications', 'jobListings.applications']);
+        return view('admin.users.show', compact('user'));
+    }
+
+    public function editUser(User $user)
+    {
+        $user->load('profile');
+        return view('admin.users.edit', compact('user'));
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $request->validate([
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name' => ['required', 'string', 'max:50'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone_e164' => ['required', 'string', 'regex:/^\+256\d{9}$/', 'unique:users,phone_e164,' . $user->id],
+            'role' => ['required', 'in:admin,worker,employer'],
+            'new_password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'bio' => ['nullable', 'string'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'availability' => ['nullable', 'in:available,busy,unavailable'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $userData = [
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone_e164' => $request->phone_e164,
+            'role' => $request->role,
+        ];
+
+        // Handle email verification
+        if ($request->email_verified_at === '1' && !$user->email_verified_at) {
+            $userData['email_verified_at'] = now();
+        } elseif ($request->email_verified_at === '0' && $user->email_verified_at) {
+            $userData['email_verified_at'] = null;
+        }
+
+        // Update password if provided
+        if ($request->new_password) {
+            $userData['password'] = Hash::make($request->new_password);
+        }
+
+        $user->update($userData);
+
+        // Update profile if exists
+        if ($user->profile) {
+            $profileData = [];
+            
+            if ($user->role === 'worker') {
+                $profileData = [
+                    'bio' => $request->bio,
+                    'location' => $request->location,
+                    'availability' => $request->availability,
+                ];
+            } elseif ($user->role === 'employer') {
+                $profileData = [
+                    'company_name' => $request->company_name,
+                    'location' => $request->location,
+                ];
+            }
+
+            $user->profile->update(array_filter($profileData));
+        }
+
+        return redirect()->route('admin.users.show', $user)->with('success', 'User updated successfully!');
+    }
+
+    public function destroyUser(User $user)
+    {
+        // Prevent deletion of admin users
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.users.index')->with('error', 'Cannot delete admin users!');
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully!');
+    }
 }

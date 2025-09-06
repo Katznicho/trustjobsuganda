@@ -12,9 +12,29 @@ use Illuminate\Support\Facades\Auth;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Public profile route (accessible without authentication)
+Route::get('/profile/{user}', [App\Http\Controllers\PublicProfileController::class, 'show'])->name('profile.public');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/how-it-works', [HomeController::class, 'howItWorks'])->name('how-it-works');
+
+// Navigation menu routes
+Route::get('/discover', function () {
+    return view('discover');
+})->name('discover');
+Route::get('/people', function () {
+    return view('people');
+})->name('people');
+Route::get('/learning', function () {
+    return view('learning');
+})->name('learning');
+Route::get('/jobs', function () {
+    return view('jobs');
+})->name('jobs');
+Route::get('/contact-us', function () {
+    return view('contact-us');
+})->name('contact-us');
 
 // Authentication routes
 require __DIR__.'/auth.php';
@@ -42,7 +62,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/users', [AdminDashboard::class, 'users'])->name('users.index');
         Route::get('/users/create', [AdminDashboard::class, 'createAdmin'])->name('users.create');
         Route::post('/users', [AdminDashboard::class, 'storeAdmin'])->name('users.store');
+        Route::get('/users/{user}', [AdminDashboard::class, 'showUser'])->name('users.show');
+        Route::get('/users/{user}/edit', [AdminDashboard::class, 'editUser'])->name('users.edit');
+        Route::put('/users/{user}', [AdminDashboard::class, 'updateUser'])->name('users.update');
+        Route::delete('/users/{user}', [AdminDashboard::class, 'destroyUser'])->name('users.destroy');
         Route::get('/jobs', [AdminDashboard::class, 'jobs'])->name('jobs.index');
+        Route::get('/jobs/{job}', [AdminDashboard::class, 'showJob'])->name('jobs.show');
+        Route::get('/jobs/{job}/edit', [AdminDashboard::class, 'editJob'])->name('jobs.edit');
+        Route::put('/jobs/{job}', [AdminDashboard::class, 'updateJob'])->name('jobs.update');
+        Route::delete('/jobs/{job}', [AdminDashboard::class, 'destroyJob'])->name('jobs.destroy');
         
         // Skills management
         Route::get('/skills', [AdminDashboard::class, 'skills'])->name('skills.index');
@@ -64,9 +92,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['auth', 'role:worker'])->prefix('worker')->name('worker.')->group(function () {
         Route::get('/', [WorkerDashboard::class, 'index'])->name('dashboard');
         Route::get('/profile', [WorkerDashboard::class, 'profile'])->name('profile');
+        Route::get('/profile/edit', [WorkerDashboard::class, 'editProfile'])->name('profile.edit');
+        Route::put('/profile', [WorkerDashboard::class, 'updateProfile'])->name('profile.update');
+        Route::get('/profile/public', [WorkerDashboard::class, 'publicProfile'])->name('profile.public');
+        Route::get('/cv/download', [WorkerDashboard::class, 'downloadCV'])->name('cv.download');
         Route::get('/jobs', [WorkerDashboard::class, 'jobs'])->name('jobs.index');
         Route::get('/jobs/search', [WorkerDashboard::class, 'searchJobs'])->name('jobs.search');
+        Route::get('/jobs/{job}', [WorkerDashboard::class, 'showJob'])->name('jobs.show');
+        Route::post('/jobs/{job}/apply', [WorkerDashboard::class, 'applyToJob'])->name('jobs.apply');
         Route::get('/applications', [WorkerDashboard::class, 'applications'])->name('applications.index');
+        Route::get('/applications/{application}/edit', [WorkerDashboard::class, 'editApplication'])->name('applications.edit');
+        Route::put('/applications/{application}', [WorkerDashboard::class, 'updateApplication'])->name('applications.update');
+        Route::delete('/applications/{application}', [WorkerDashboard::class, 'withdrawApplication'])->name('applications.withdraw');
     });
 
     // Employer routes
@@ -75,8 +112,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/jobs', [EmployerDashboard::class, 'jobs'])->name('jobs.index');
         Route::get('/jobs/create', [EmployerDashboard::class, 'createJob'])->name('jobs.create');
         Route::post('/jobs', [EmployerDashboard::class, 'storeJob'])->name('jobs.store');
+        Route::get('/jobs/{job}', [EmployerDashboard::class, 'showJob'])->name('jobs.show');
+        Route::get('/jobs/{job}/edit', [EmployerDashboard::class, 'editJob'])->name('jobs.edit');
+        Route::put('/jobs/{job}', [EmployerDashboard::class, 'updateJob'])->name('jobs.update');
+        Route::delete('/jobs/{job}', [EmployerDashboard::class, 'destroyJob'])->name('jobs.destroy');
+        Route::patch('/jobs/{job}/status', [EmployerDashboard::class, 'updateJobStatus'])->name('jobs.status');
         Route::get('/applications', [EmployerDashboard::class, 'applications'])->name('applications.index');
+        Route::get('/applications/{application}/worker-profile', [EmployerDashboard::class, 'viewWorkerProfile'])->name('applications.worker-profile');
+        Route::patch('/applications/{application}/shortlist', [EmployerDashboard::class, 'shortlistApplication'])->name('applications.shortlist');
+        Route::patch('/applications/{application}/hire', [EmployerDashboard::class, 'hireApplication'])->name('applications.hire');
+        Route::patch('/applications/{application}/reject', [EmployerDashboard::class, 'rejectApplication'])->name('applications.reject');
         Route::get('/workers/search', [EmployerDashboard::class, 'searchWorkers'])->name('workers.search');
+        Route::get('/workers/{worker}/profile', [EmployerDashboard::class, 'showWorkerProfile'])->name('workers.profile');
+        Route::post('/workers/contact', [EmployerDashboard::class, 'contactWorker'])->name('workers.contact');
+        Route::post('/workers/invite', [EmployerDashboard::class, 'inviteWorker'])->name('workers.invite');
     });
 
     // Profile routes

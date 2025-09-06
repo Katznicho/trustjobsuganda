@@ -123,10 +123,19 @@
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-500">Posted {{ $job->created_at->diffForHumans() }}</span>
                                     <div class="flex space-x-2">
-                                        <button class="text-indigo-600 hover:text-indigo-900 text-sm">View Details</button>
-                                        <button class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition text-sm">
-                                            Apply Now
-                                        </button>
+                                        <a href="{{ route('worker.jobs.show', $job) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">View Details</a>
+                                        @php
+                                            $hasApplied = Auth::user()->applications()->where('job_id', $job->id)->exists();
+                                        @endphp
+                                        @if($hasApplied)
+                                            <span class="bg-gray-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed">
+                                                Applied
+                                            </span>
+                                        @else
+                                            <button onclick="applyToJob({{ $job->id }}, '{{ $job->title }}')" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition text-sm">
+                                                Apply Now
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -153,4 +162,77 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden form for job applications -->
+    <form id="applicationForm" method="POST" style="display: none;">
+        @csrf
+        <input type="hidden" id="application_job_id" name="job_id">
+        <textarea id="cover_letter" name="cover_letter" placeholder="Write your cover letter here..."></textarea>
+    </form>
+
+    <script>
+        function applyToJob(jobId, jobTitle) {
+            Swal.fire({
+                title: 'Apply to Job',
+                text: `Apply for "${jobTitle}"?`,
+                input: 'textarea',
+                inputLabel: 'Cover Letter (Optional)',
+                inputPlaceholder: 'Write a brief cover letter explaining why you\'re suitable for this job...',
+                inputAttributes: {
+                    'aria-label': 'Type your cover letter here'
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Apply Now',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    // Cover letter is optional, so no validation needed
+                    return Promise.resolve();
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Update the hidden form
+                    document.getElementById('application_job_id').value = jobId;
+                    document.getElementById('cover_letter').value = result.value || '';
+                    
+                    // Set the form action
+                    document.getElementById('applicationForm').action = `/worker/jobs/${jobId}/apply`;
+                    
+                    // Show loading
+                    Swal.fire({
+                        title: 'Applying...',
+                        text: 'Please wait while we submit your application.',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form
+                    document.getElementById('applicationForm').submit();
+                }
+            });
+        }
+
+        // Show success/error messages
+        @if(session('success'))
+            Swal.fire({
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                title: 'Error!',
+                text: '{{ session('error') }}',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        @endif
+    </script>
 </x-app-layout>

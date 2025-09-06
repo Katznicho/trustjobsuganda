@@ -22,10 +22,11 @@
                     <a href="/" class="text-2xl font-bold text-blue-600">TrustJobs</a>
                 </div>
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#discover" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Discover</a>
-                    <a href="#people" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">People</a>
-                    <a href="#learning" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Learning</a>
-                    <a href="#jobs" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Jobs</a>
+                    <a href="{{ route('discover') }}" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Discover</a>
+                    <a href="{{ route('people') }}" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">People</a>
+                    <a href="{{ route('learning') }}" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Learning</a>
+                    <a href="{{ route('jobs') }}" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Jobs</a>
+                    <a href="{{ route('contact-us') }}" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Contact</a>
                     <a href="{{ route('login') }}" class="text-gray-600 hover:text-blue-600 transition text-sm font-medium">Sign in</a>
                     <a href="{{ route('register') }}" class="bg-blue-600 text-white px-4 py-1.5 rounded-full hover:bg-blue-700 transition text-sm font-medium">
                         Join now
@@ -198,7 +199,7 @@
                     <p class="text-gray-600 mb-4">
                         Create detailed profiles showcasing your skills, experience, and achievements with verified credentials.
                     </p>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
+                    <a href="{{ route('people') }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
                 </div>
                 
                 <div class="bg-gray-50 rounded-xl p-8 hover:bg-gray-100 transition">
@@ -211,7 +212,7 @@
                     <p class="text-gray-600 mb-4">
                         Our AI-powered system matches you with relevant opportunities based on your skills and preferences.
                     </p>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
+                    <a href="{{ route('jobs') }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
                 </div>
                 
                 <div class="bg-gray-50 rounded-xl p-8 hover:bg-gray-100 transition">
@@ -224,7 +225,7 @@
                     <p class="text-gray-600 mb-4">
                         Get paid securely through Mobile Money, bank transfers, and other local payment methods with escrow protection.
                     </p>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
+                    <a href="{{ route('discover') }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
                 </div>
                 
                 <div class="bg-gray-50 rounded-xl p-8 hover:bg-gray-100 transition">
@@ -237,7 +238,7 @@
                     <p class="text-gray-600 mb-4">
                         Build your professional reputation with ratings, reviews, and verified work history that employers trust.
                     </p>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
+                    <a href="{{ route('people') }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
                 </div>
                 
                 <div class="bg-gray-50 rounded-xl p-8 hover:bg-gray-100 transition">
@@ -250,7 +251,7 @@
                     <p class="text-gray-600 mb-4">
                         Get help anytime with our dedicated support team available via phone, WhatsApp, and email.
                     </p>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
+                    <a href="{{ route('contact-us') }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
                 </div>
                 
                 <div class="bg-gray-50 rounded-xl p-8 hover:bg-gray-100 transition">
@@ -263,7 +264,7 @@
                     <p class="text-gray-600 mb-4">
                         Track your earnings, job completion rates, and performance metrics to optimize your business.
                     </p>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
+                    <a href="{{ route('discover') }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">Learn more →</a>
                 </div>
             </div>
         </div>
@@ -320,33 +321,33 @@
                 <div>
                     <h4 class="font-semibold mb-4">For Workers</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition">Find Jobs</a></li>
-                        <li><a href="#" class="hover:text-white transition">Create Profile</a></li>
-                        <li><a href="#" class="hover:text-white transition">Skills Training</a></li>
-                        <li><a href="#" class="hover:text-white transition">Success Stories</a></li>
-                        <li><a href="#" class="hover:text-white transition">Career Advice</a></li>
+                        <li><a href="{{ route('jobs') }}" class="hover:text-white transition">Find Jobs</a></li>
+                        <li><a href="{{ route('register') }}" class="hover:text-white transition">Create Profile</a></li>
+                        <li><a href="{{ route('learning') }}" class="hover:text-white transition">Skills Training</a></li>
+                        <li><a href="{{ route('people') }}" class="hover:text-white transition">Success Stories</a></li>
+                        <li><a href="{{ route('discover') }}" class="hover:text-white transition">Career Advice</a></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h4 class="font-semibold mb-4">For Employers</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition">Post Jobs</a></li>
-                        <li><a href="#" class="hover:text-white transition">Browse Workers</a></li>
-                        <li><a href="#" class="hover:text-white transition">Hiring Guide</a></li>
-                        <li><a href="#" class="hover:text-white transition">Pricing</a></li>
-                        <li><a href="#" class="hover:text-white transition">Enterprise</a></li>
+                        <li><a href="{{ route('jobs') }}" class="hover:text-white transition">Post Jobs</a></li>
+                        <li><a href="{{ route('people') }}" class="hover:text-white transition">Browse Workers</a></li>
+                        <li><a href="{{ route('discover') }}" class="hover:text-white transition">Hiring Guide</a></li>
+                        <li><a href="{{ route('contact-us') }}" class="hover:text-white transition">Pricing</a></li>
+                        <li><a href="{{ route('contact-us') }}" class="hover:text-white transition">Enterprise</a></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h4 class="font-semibold mb-4">Support</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition">Help Center</a></li>
-                        <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
-                        <li><a href="#" class="hover:text-white transition">Safety</a></li>
-                        <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
-                        <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                        <li><a href="{{ route('discover') }}" class="hover:text-white transition">Help Center</a></li>
+                        <li><a href="{{ route('contact-us') }}" class="hover:text-white transition">Contact Us</a></li>
+                        <li><a href="{{ route('discover') }}" class="hover:text-white transition">Safety</a></li>
+                        <li><a href="{{ route('contact-us') }}" class="hover:text-white transition">Terms of Service</a></li>
+                        <li><a href="{{ route('contact-us') }}" class="hover:text-white transition">Privacy Policy</a></li>
                     </ul>
                 </div>
             </div>

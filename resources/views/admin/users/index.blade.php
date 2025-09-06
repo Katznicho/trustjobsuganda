@@ -89,10 +89,14 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex space-x-2">
-                                            <button class="text-indigo-600 hover:text-indigo-900">View</button>
-                                            <button class="text-yellow-600 hover:text-yellow-900">Edit</button>
+                                            <a href="{{ route('admin.users.show', $user) }}" class="text-indigo-600 hover:text-indigo-900">View</a>
+                                            <a href="{{ route('admin.users.edit', $user) }}" class="text-yellow-600 hover:text-yellow-900">Edit</a>
                                             @if($user->role !== 'admin')
-                                            <button class="text-red-600 hover:text-red-900">Suspend</button>
+                                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline" onsubmit="return confirmDeleteUser({{ $user->id }})">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                            </form>
                                             @endif
                                         </div>
                                     </td>
@@ -126,6 +130,36 @@
                 }
             });
         });
+
+        function confirmDeleteUser(userId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // The form will submit automatically
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        // Show success message if exists
+        @if(session('success'))
+            Swal.fire({
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        @endif
     </script>
 </x-app-layout>
+
+
 

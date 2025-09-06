@@ -84,4 +84,202 @@ class DashboardController extends Controller
 
         return view('worker.jobs.search', compact('jobs', 'skills'));
     }
+
+    public function showJob(JobListing $job)
+    {
+        $job->load(['employer', 'applications']);
+        return view('worker.jobs.show', compact('job'));
+    }
+
+    public function applyToJob(Request $request, JobListing $job)
+    {
+        $user = Auth::user();
+
+        // Check if user has already applied
+        $existingApplication = $user->applications()->where('job_id', $job->id)->first();
+        if ($existingApplication) {
+            return redirect()->back()->with('error', 'You have already applied for this job.');
+        }
+
+        // Check if job is still open
+        if ($job->status !== 'open') {
+            return redirect()->back()->with('error', 'This job is no longer accepting applications.');
+        }
+
+        $validated = $request->validate([
+            'cover_letter' => 'nullable|string|max:1000',
+        ]);
+
+        $user->applications()->create([
+            'job_id' => $job->id,
+            'cover_letter' => $validated['cover_letter'] ?? null,
+            'status' => 'pending',
+        ]);
+
+        return redirect()->back()->with('success', 'Your application has been submitted successfully!');
+    }
+
+    public function editProfile()
+    {
+        $user = Auth::user();
+        $skillCategories = SkillCategory::with('skills')->get();
+        $languages = Language::all();
+        
+        return view('worker.profile.edit', compact('user', 'skillCategories', 'languages'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
+            'bio' => 'nullable|string|max:1000',
+            'location' => 'nullable|string|max:255',
+            'availability' => 'nullable|in:available,busy,unavailable',
+            'skills' => 'array',
+            'skills.*.skill_id' => 'required|exists:skills,id',
+            'skills.*.experience_tier' => 'required|in:<6 months,6-12 months,1-2 years,2-5 years,>5 years',
+            'skills.*.years_estimate' => 'nullable|numeric|min:0|max:50',
+            'skills.*.has_certificate' => 'boolean',
+            'skills.*.institution_name' => 'nullable|string|max:255',
+            'skills.*.certificate_name' => 'nullable|string|max:255',
+            'skills.*.issue_date' => 'nullable|date',
+            'languages' => 'array',
+            'languages.*.language_id' => 'required|exists:languages,id',
+            'languages.*.proficiency' => 'required|in:beginner,intermediate,advanced,native',
+        ]);
+
+        // Update user basic info
+        $user->update([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+        ]);
+
+        // Update or create profile
+        $profile = $user->profile;
+        if (!$profile) {
+            $profile = $user->profile()->create([]);
+        }
+
+        $profile->update([
+            'bio' => $validated['bio'],
+            'location' => $validated['location'],
+            'availability' => $validated['availability'],
+        ]);
+
+        // Update skills
+        if (isset($validated['skills'])) {
+            $user->userSkills()->delete();
+            foreach ($validated['skills'] as $skillData) {
+                $user->userSkills()->create($skillData);
+            }
+        }
+
+        // Update languages
+        if (isset($validated['languages'])) {
+            $user->userLanguages()->delete();
+            foreach ($validated['languages'] as $languageData) {
+                $user->userLanguages()->create($languageData);
+            }
+        }
+
+        return redirect()->route('worker.profile')->with('success', 'Profile updated successfully!');
+    }
+
+    public function publicProfile()
+    {
+        $user = Auth::user();
+        $user->load(['profile', 'userSkills.skill', 'userLanguages.language', 'educationRecords', 'references']);
+        
+        return view('worker.profile.public', compact('user'));
+    }
+
+    public function downloadCV()
+    {
+        $user = Auth::user();
+        $user->load(['profile', 'userSkills.skill', 'userLanguages.language', 'educationRecords', 'references']);
+
+        // Generate PDF using DomPDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('worker.cv.pdf', compact('user'));
+        
+        // Set PDF options
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Arial'
+        ]);
+        
+        $filename = "CV_{$user->first_name}_{$user->last_name}_" . date('Y-m-d') . ".pdf";
+        
+        return $pdf->download($filename);
+    }
+
+    public function editApplication(Application $application)
+    {
+        // Ensure the application belongs to the current user
+        if ($application->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to this application.');
+        }
+
+        // Only allow editing pending applications
+        if ($application->status !== 'pending') {
+            return redirect()->route('worker.applications.index')
+                ->with('error', 'You can only edit pending applications.');
+        }
+
+        $application->load(['job.employer']);
+        return view('worker.applications.edit', compact('application'));
+    }
+
+    public function updateApplication(Request $request, Application $application)
+    {
+        // Ensure the application belongs to the current user
+        if ($application->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to this application.');
+        }
+
+        // Only allow updating pending applications
+        if ($application->status !== 'pending') {
+            return redirect()->route('worker.applications.index')
+                ->with('error', 'You can only edit pending applications.');
+        }
+
+        $validated = $request->validate([
+            'cover_letter' => 'nullable|string|max:2000',
+        ]);
+
+        $application->update([
+            'cover_letter' => $validated['cover_letter'],
+        ]);
+
+        return redirect()->route('worker.applications.index')
+            ->with('success', 'Your application has been updated successfully!');
+    }
+
+    public function withdrawApplication(Application $application)
+    {
+        // Ensure the application belongs to the current user
+        if ($application->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to this application.');
+        }
+
+        // Only allow withdrawing pending applications
+        if ($application->status !== 'pending') {
+            return redirect()->route('worker.applications.index')
+                ->with('error', 'You can only withdraw pending applications.');
+        }
+
+        $jobTitle = $application->job->title;
+        $application->delete();
+
+        return redirect()->route('worker.applications.index')
+            ->with('success', "Your application for '{$jobTitle}' has been withdrawn successfully!");
+    }
 }
