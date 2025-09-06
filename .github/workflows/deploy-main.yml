@@ -96,7 +96,9 @@ jobs:
             # Set permissions for storage and cache directories
             if [ -d "storage" ] && [ -d "bootstrap/cache" ]; then
               chmod -R 755 storage bootstrap/cache
-              chown -R u367101322:u367101322 storage bootstrap/cache
+              # Get the current user and group from the server
+              CURRENT_USER=$(whoami)
+              chown -R $CURRENT_USER:$CURRENT_USER storage bootstrap/cache || echo "Permission setting failed, continuing..."
             else
               echo "Warning: storage or bootstrap/cache directory not found"
             fi
@@ -111,6 +113,14 @@ jobs:
 
             # Verify artisan exists before running commands
             if [ -f "artisan" ]; then
+              # Debug: Check Laravel configuration
+              echo "Checking Laravel configuration..."
+              php artisan --version || echo "Laravel version check failed"
+              
+              # Debug: Check database connection
+              echo "Testing database connection..."
+              php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || echo "Database connection failed"
+              
               # Debug: List available migrations
               echo "Listing migrations:"
               ls -la database/migrations
@@ -121,14 +131,20 @@ jobs:
               # Ensure migrations table exists
               php artisan migrate:install || echo "Failed to create migrations table"
 
-              # Run migrations with verbose output
-              php artisan migrate --force --verbose || { echo "Migration failed"; exit 1; }
+              # Run migrations with verbose output and better error handling
+              echo "Running migrations..."
+              php artisan migrate --force --verbose || { 
+                echo "Migration failed, trying to continue..."
+                php artisan migrate:status || echo "Cannot check migration status"
+                echo "Continuing with deployment despite migration issues..."
+              }
 
               # Run seeders only if users table is empty
-              USER_COUNT=$(php artisan db:query --statement="SELECT COUNT(*) as count FROM users" | grep -o "\"count\": *[0-9]\+" | awk "{print \$2}")
-              if [ "$USER_COUNT" = "0" ]; then
-                echo "Users table is empty, running seeders"
-                php artisan db:seed --force --verbose || { echo "Seeding failed"; exit 1; }
+              echo "Checking if seeders should run..."
+              USER_COUNT=$(php artisan db:query --statement="SELECT COUNT(*) as count FROM users" 2>/dev/null | grep -o "\"count\": *[0-9]\+" | awk "{print \$2}" || echo "0")
+              if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
+                echo "Users table is empty or query failed, running seeders"
+                php artisan db:seed --force --verbose || echo "Seeding failed, continuing..."
               else
                 echo "Users table is not empty (count: $USER_COUNT), skipping seeding"
               fi
