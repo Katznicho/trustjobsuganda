@@ -131,12 +131,15 @@ jobs:
               # Ensure migrations table exists
               php artisan migrate:install || echo "Failed to create migrations table"
 
-              # Run migrations with verbose output and better error handling
-              echo "Running migrations..."
-              php artisan migrate --force --verbose || { 
-                echo "Migration failed, trying to continue..."
-                php artisan migrate:status || echo "Cannot check migration status"
-                echo "Continuing with deployment despite migration issues..."
+              # Run fresh migrations to ensure clean database
+              echo "Running fresh migrations..."
+              php artisan migrate:fresh --force --verbose || { 
+                echo "Fresh migration failed, trying regular migration..."
+                php artisan migrate --force --verbose || {
+                  echo "Migration failed, trying to continue..."
+                  php artisan migrate:status || echo "Cannot check migration status"
+                  echo "Continuing with deployment despite migration issues..."
+                }
               }
 
               # Run seeders only if users table is empty
