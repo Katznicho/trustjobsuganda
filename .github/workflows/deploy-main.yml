@@ -68,8 +68,8 @@ jobs:
           echo "Local files in GITHUB_WORKSPACE:"
           ls -la $GITHUB_WORKSPACE
 
-          # Copy files using rsync with sshpass, excluding .env and .htaccess
-          sshpass -p "$FTP_PASSWORD" rsync -avz --exclude '.env' --exclude '.htaccess' --exclude '.git' --exclude 'node_modules' --exclude 'vendor' --exclude 'tests' --exclude 'README.md' --exclude 'DEPLOYMENT_GUIDE.md' --exclude '.github' -e "ssh -p 65002 -o StrictHostKeyChecking=no" $GITHUB_WORKSPACE/ ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }}:"$DEPLOY_DIR"
+          # Copy files using rsync with sshpass, excluding .env and .htaccess but including vendor
+          sshpass -p "$FTP_PASSWORD" rsync -avz --exclude '.env' --exclude '.htaccess' --exclude '.git' --exclude 'node_modules' --exclude 'tests' --exclude 'README.md' --exclude 'DEPLOYMENT_GUIDE.md' --exclude '.github' -e "ssh -p 65002 -o StrictHostKeyChecking=no" $GITHUB_WORKSPACE/ ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }}:"$DEPLOY_DIR"
 
           # Run SSH commands to verify and configure
           sshpass -p "$FTP_PASSWORD" ssh -o StrictHostKeyChecking=no -p 65002 ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }} bash -c '
@@ -113,9 +113,33 @@ jobs:
 
             # Verify artisan exists before running commands
             if [ -f "artisan" ]; then
+              # Install Composer dependencies on server
+              echo "Installing Composer dependencies on server..."
+              composer install --no-dev --optimize-autoloader --no-interaction || echo "Composer install failed"
+              
+              # Clear Laravel caches
+              echo "Clearing Laravel caches..."
+              php artisan config:clear || echo "Config clear failed"
+              php artisan cache:clear || echo "Cache clear failed"
+              php artisan route:clear || echo "Route clear failed"
+              php artisan view:clear || echo "View clear failed"
+              
               # Debug: Check Laravel configuration
               echo "Checking Laravel configuration..."
               php artisan --version || echo "Laravel version check failed"
+              
+              # Debug: Check .env file
+              echo "Checking .env file..."
+              if [ -f ".env" ]; then
+                echo ".env file exists"
+                echo "DB_CONNECTION: $(grep '^DB_CONNECTION=' .env | cut -d'=' -f2)"
+                echo "DB_HOST: $(grep '^DB_HOST=' .env | cut -d'=' -f2)"
+                echo "DB_DATABASE: $(grep '^DB_DATABASE=' .env | cut -d'=' -f2)"
+                echo "DB_USERNAME: $(grep '^DB_USERNAME=' .env | cut -d'=' -f2)"
+              else
+                echo "ERROR: .env file not found!"
+                exit 1
+              fi
               
               # Debug: Check database connection
               echo "Testing database connection..."
