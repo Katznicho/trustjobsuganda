@@ -177,6 +177,10 @@ class DashboardController extends Controller
         if (isset($validated['skills'])) {
             $user->userSkills()->delete();
             foreach ($validated['skills'] as $skillData) {
+                // Provide default value for years_estimate if not provided
+                if (!isset($skillData['years_estimate']) || $skillData['years_estimate'] === null) {
+                    $skillData['years_estimate'] = $this->getYearsEstimate($skillData['experience_tier']);
+                }
                 $user->userSkills()->create($skillData);
             }
         }
@@ -281,5 +285,17 @@ class DashboardController extends Controller
 
         return redirect()->route('worker.applications.index')
             ->with('success', "Your application for '{$jobTitle}' has been withdrawn successfully!");
+    }
+
+    private function getYearsEstimate($tier): float
+    {
+        return match($tier) {
+            '<6 months' => 0.25,
+            '6-12 months' => 0.75,
+            '1-2 years' => 1.5,
+            '2-5 years' => 3.5,
+            '>5 years' => 6.0,
+            default => 0.0,
+        };
     }
 }

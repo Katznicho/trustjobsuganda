@@ -119,7 +119,7 @@
                                         @if(old('skills'))
                                             @foreach(old('skills') as $index => $skill)
                                                 <div class="skill-item border border-gray-200 rounded-lg p-4 mb-4">
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700">Skill</label>
                                                             <select name="skills[{{ $index }}][skill_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -146,6 +146,13 @@
                                                                 <option value=">5 years" {{ $skill['experience_tier'] == '>5 years' ? 'selected' : '' }}>More than 5 years</option>
                                                             </select>
                                                         </div>
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700">Years of Experience</label>
+                                                            <input type="number" name="skills[{{ $index }}][years_estimate]" step="0.1" min="0" max="50" 
+                                                                   value="{{ old('skills.'.$index.'.years_estimate', $skill['years_estimate'] ?? '') }}" 
+                                                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+                                                                   placeholder="e.g., 1.5">
+                                                        </div>
                                                     </div>
                                                     <div class="mt-4 flex justify-end">
                                                         <button type="button" onclick="removeSkill(this)" class="text-red-600 hover:text-red-800 text-sm">Remove Skill</button>
@@ -155,7 +162,7 @@
                                         @else
                                             @foreach($user->userSkills as $index => $userSkill)
                                                 <div class="skill-item border border-gray-200 rounded-lg p-4 mb-4">
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700">Skill</label>
                                                             <select name="skills[{{ $index }}][skill_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -182,6 +189,13 @@
                                                                 <option value=">5 years" {{ $userSkill->experience_tier == '>5 years' ? 'selected' : '' }}>More than 5 years</option>
                                                             </select>
                                                         </div>
+                                                        <div>
+                                                            <label class="block text-sm font-medium text-gray-700">Years of Experience</label>
+                                                            <input type="number" name="skills[{{ $index }}][years_estimate]" step="0.1" min="0" max="50" 
+                                                                   value="{{ old('skills.'.$index.'.years_estimate', $userSkill->years_estimate) }}" 
+                                                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+                                                                   placeholder="e.g., 1.5">
+                                                        </div>
                                                     </div>
                                                     <div class="mt-4 flex justify-end">
                                                         <button type="button" onclick="removeSkill(this)" class="text-red-600 hover:text-red-800 text-sm">Remove Skill</button>
@@ -205,7 +219,7 @@
                                         @if(old('languages'))
                                             @foreach(old('languages') as $index => $language)
                                                 <div class="language-item border border-gray-200 rounded-lg p-4 mb-4">
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700">Language</label>
                                                             <select name="languages[{{ $index }}][language_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -236,7 +250,7 @@
                                         @else
                                             @foreach($user->userLanguages as $index => $userLanguage)
                                                 <div class="language-item border border-gray-200 rounded-lg p-4 mb-4">
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         <div>
                                                             <label class="block text-sm font-medium text-gray-700">Language</label>
                                                             <select name="languages[{{ $index }}][language_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -298,7 +312,7 @@
             const skillItem = document.createElement('div');
             skillItem.className = 'skill-item border border-gray-200 rounded-lg p-4 mb-4';
             skillItem.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Skill</label>
                         <select name="skills[${skillIndex}][skill_id]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -322,6 +336,12 @@
                             <option value="2-5 years">2-5 years</option>
                             <option value=">5 years">More than 5 years</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Years of Experience</label>
+                        <input type="number" name="skills[${skillIndex}][years_estimate]" step="0.1" min="0" max="50" 
+                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+                               placeholder="e.g., 1.5">
                     </div>
                 </div>
                 <div class="mt-4 flex justify-end">
